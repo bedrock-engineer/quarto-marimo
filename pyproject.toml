@@ -39,33 +39,12 @@ classifiers = [
 ]
 
 [dependency-groups]
-dev = ["deno>=2.8"]
-
-[tool.pixi.workspace]
-channels = ["conda-forge"]
-name = "quarto-marimo"
-platforms = ["linux-64", "osx-arm64", "osx-64", "win-64"]
-
-[tool.pixi.tasks]
-lint = "make lint"
-setup = "make setup"
-build = { cmd = "make build", depends-on = ["setup"] }
-serve = { cmd = "make preview", depends-on = ["setup"] }
-render = { cmd = "make render", depends-on = ["setup"] }
-ci = "make ci"
-refresh = "./docs/scripts/update_tutorials.sh"
-test = "make test"
-
-[tool.pixi.dependencies]
-marimo = ">=0.23.16"
-pandoc = ">=3.4,<4"
-pyyaml = ">=6.0.2,<7"
-ruff = ">=0.16.1"
-mypy = ">=2.3,<3"
-pytest = ">=9,<10"
-
-[tool.pixi.environments]
-default = ["dev"]
+dev = [
+    "deno>=2.8",
+    "mypy>=2.3,<3",
+    "pytest>=9,<10",
+    "ruff>=0.16.1",
+]
 
 [project.urls]
 homepage = "https://github.com/marimo-team/quarto-marimo"

@@ -19,19 +19,13 @@ endif
 export PATH := $(shell pwd)/$(QUARTO_DIR)/bin:$(PATH)
 export PYTHONDONTWRITEBYTECODE := 1
 
-ifdef PIXI_PROJECT_ROOT
-  PYTHON := python
-  DENO := deno
-  RUFF := ruff
-  MYPY := mypy
-  PYTEST := pytest
-else
-  PYTHON := uv run python
-  DENO := uv run deno
-  RUFF := uv run ruff
-  MYPY := uv tool run --with marimo mypy
-  PYTEST := uv run --with pytest pytest
-endif
+# Every tool is locked in the dev dependency group, so `uv run` resolves them
+# from uv.lock rather than re-resolving to the latest release on each run.
+PYTHON := uv run python
+DENO := uv run deno
+RUFF := uv run ruff
+MYPY := uv run mypy
+PYTEST := uv run pytest
 
 # macOS archives are flat. Linux archives wrap the tree in a versioned directory.
 $(QUARTO_DIR)/bin/quarto:

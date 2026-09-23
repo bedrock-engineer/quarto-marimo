@@ -5,33 +5,34 @@ sources, and a standalone documentation site that consumes the local extension.
 
 ## Setup
 
-Install [Pixi](https://pixi.sh) 0.68 or newer, then create the development
-environment:
+Install [uv](https://docs.astral.sh/uv/), which the extension already requires
+at render time, then create the development environment:
 
 ```bash
-pixi install --locked
-pixi run setup
+uv sync
+make setup
 ```
 
-The setup task installs the repository's pinned Quarto release. Pixi provides
-Python, marimo, Deno, Pandoc, Ruff, mypy, and pytest.
+`uv sync` provides Python, marimo, Deno, Ruff, mypy, and pytest from `uv.lock`.
+`make setup` installs the repository's pinned Quarto release, which bundles the
+pandoc the engine calls.
 
 ## Commands
 
 | Command | Result |
 | --- | --- |
-| `pixi run build` | Build and stage the versioned engine, browser, and style artifacts |
-| `pixi run test` | Run the TypeScript and Python test suites |
-| `pixi run lint` | Run Python and TypeScript linting and type checks |
-| `pixi run render` | Install the local extension into `docs` and render the site |
-| `pixi run serve` | Install the local extension into `docs` and start Quarto preview |
+| `make build` | Build and stage the versioned engine, browser, and style artifacts |
+| `make test` | Run the TypeScript and Python test suites |
+| `make lint` | Run Python and TypeScript linting and type checks |
+| `make render` | Install the local extension into `docs` and render the site |
+| `make preview` | Install the local extension into `docs` and start Quarto preview |
 | `make clean` | Delete generated artifacts, caches, and rendered documentation |
 
 Format Python and TypeScript source with:
 
 ```bash
-pixi run ruff format
-pixi run deno fmt deno.json src tests
+uv run ruff format
+uv run deno fmt deno.json src tests
 ```
 
 ## Repository structure
@@ -80,9 +81,9 @@ matching GitHub release.
 Run the full local gate before requesting review:
 
 ```bash
-pixi run lint
-pixi run test
-pixi run render
+make lint
+make test
+make render
 ```
 
 ## Releases

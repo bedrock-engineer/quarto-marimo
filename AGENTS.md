@@ -6,30 +6,32 @@ browser mounting, generated assets, or release automation.
 
 ## Commands
 
-Use Pixi 0.68 or newer. Pixi provides Python, marimo, Deno, Pandoc, Ruff, mypy,
-and pytest. The Makefile installs Quarto 1.9.37 under `.quarto-dev`.
+Use uv, which the extension already requires at render time. `uv sync` provides
+Python, marimo, Deno, Ruff, mypy, and pytest from `uv.lock`. The Makefile
+installs Quarto 1.9.37 under `.quarto-dev`; that Quarto bundles the pandoc the
+engine calls.
 
 | Purpose | Command | Expected result |
 | --- | --- | --- |
-| Install | `pixi install --locked` | Create the locked development environment |
-| Set up Quarto | `pixi run setup` | Install the pinned Quarto release |
-| Lint and type-check | `pixi run lint` | Ruff, mypy, Deno formatting, linting, and type checks pass |
-| Tests | `pixi run test` | TypeScript and Python tests pass |
-| Build | `pixi run build` | Create the versioned engine, browser, and CSS artifacts |
-| Render docs | `pixi run render` | Install the local extension and render the documentation site |
-| Preview docs | `pixi run serve` | Install the local extension and start Quarto preview |
-| Refresh tutorials | `pixi run refresh` | Export the installed marimo tutorials as Quarto Markdown |
+| Install | `uv sync` | Create the locked development environment |
+| Set up Quarto | `make setup` | Install the pinned Quarto release |
+| Lint and type-check | `make lint` | Ruff, mypy, Deno formatting, linting, and type checks pass |
+| Tests | `make test` | TypeScript and Python tests pass |
+| Build | `make build` | Create the versioned engine, browser, and CSS artifacts |
+| Render docs | `make render` | Install the local extension and render the documentation site |
+| Preview docs | `make preview` | Install the local extension and start Quarto preview |
+| Refresh tutorials | `./docs/scripts/update_tutorials.sh` | Export the installed marimo tutorials as Quarto Markdown |
 | Clean | `make clean` | Delete build artifacts, extension caches, and rendered docs |
 
 Run focused tests with:
 
 ```bash
-pixi run deno test --allow-read --allow-write --allow-env --allow-run tests/engine/process.test.ts
-pixi run pytest tests/python/test_document.py -v
+uv run deno test --allow-read --allow-write --allow-env --allow-run tests/engine/process.test.ts
+uv run pytest tests/python/test_document.py -v
 ```
 
 `make test-ts` and `make test-py` run each full suite separately. Use
-`pixi run lint && pixi run test && pixi run render` as the pull request gate.
+`make lint && make test && make render` as the pull request gate.
 
 ## Architecture
 
@@ -82,8 +84,8 @@ Quarto engine types, Pandoc output, or Quarto theme classes.
   `tests/browser`.
 - Shipped Python lives under `_extensions/marimo/python`. Python tests live in
   `tests/python` and use absolute `quarto_marimo` imports.
-- Format Python with `pixi run ruff format`. Format TypeScript with
-  `pixi run deno fmt deno.json src tests`.
+- Format Python with `uv run ruff format`. Format TypeScript with
+  `uv run deno fmt deno.json src tests`.
 - Test through engine discovery, subprocess payloads, protocol records,
   projected Markdown, registered elements, and rendered documents. Avoid
   assertions against generated formatting or private helper structure.
@@ -144,7 +146,7 @@ renders. Change engine behavior in `src/engine`, browser behavior in
 `src/browser`, and bridge behavior in mdx-marimo. Edit the committed
 `marimo-engine.js` loader when its download or cache contract changes.
 
-`pixi run refresh` regenerates `docs/tutorials` from the installed marimo
+`./docs/scripts/update_tutorials.sh` regenerates `docs/tutorials` from the installed marimo
 tutorials with `marimo export md --flavor qmd`. Review generated tutorial
 changes before committing them.
 
