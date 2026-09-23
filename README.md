@@ -107,6 +107,27 @@ SELECT 1 AS value
 SQL cells also accept `query` and `engine`. Use `{markdown .marimo}` when a
 Markdown cell should join the page app.
 
+## Notebook pages
+
+`marimo export md --flavor qmd` turns a notebook into a page this engine can
+render, but it files the inline script metadata under `header:`, which is not
+where dependencies are read from. The packaged pre-render step exports every
+notebook in the project and fixes that up:
+
+```yaml
+project:
+  pre-render: python _extensions/marimo-team/marimo/python/prerender.py
+```
+
+Each `.py` notebook becomes a `.qmd` beside it, so the notebook's place in the
+project decides the page URL, and underscores in the stem become dashes.
+Directories Quarto ignores are ignored here too. Pages are written only when
+their content changes, so `quarto preview` does not re-render in a loop.
+
+Import `quarto_marimo.prerender` instead of running it when a project needs to
+add its own content; `convert_all` takes a `transform` applied to each page
+body.
+
 ## Python environment
 
 Set `pyproject` in the document YAML to declare browser and build dependencies:
