@@ -31,6 +31,7 @@ def collect_page(
     *,
     filename: str,
     global_eval: bool,
+    foldable: bool = True,
 ) -> MarimoPageRequest:
     global_options = page_options_from_root(root)
     if not global_eval:
@@ -42,7 +43,9 @@ def collect_page(
         if child.tag == MARIMO_MD:
             continue
         local_options, source = extract_cell_config(str(child.text or ""))
-        options = cell_options_patch(local_options, dict(child.attrib))
+        options = cell_options_patch(
+            local_options, dict(child.attrib), foldable=foldable
+        )
         if not global_eval:
             options.pop("execution", None)
         cells.append(

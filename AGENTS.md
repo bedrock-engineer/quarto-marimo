@@ -136,6 +136,11 @@ Echoed source is projected as a Quarto code block carrying `.cell-code`, so
 Quarto owns highlighting, the copy button, and folding. `code-fold` implies
 `echo: true`.
 
+`hide-code` folds the source instead of removing it, matching marimo's
+collapsed-but-revealable `hide_code`. Collection passes `foldable=False` for
+static formats, where nothing can reveal a folded block, so those keep the
+stricter reading.
+
 ## Generated artifacts
 
 `make build` creates three versioned release artifacts:

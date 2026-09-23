@@ -82,7 +82,14 @@ def strip_inline_comment(value: str) -> str:
 def cell_options_patch(
     local_options: JsonObject,
     attributes: dict[str, str],
+    *,
+    foldable: bool = True,
 ) -> JsonObject:
+    """Translate one cell's Quarto options into a protocol patch.
+
+    `foldable` says whether the target format can collapse code. Static formats
+    such as PDF cannot, so `hide-code` keeps its stricter reading there.
+    """
     values = {
         **local_options,
         **{key.replace("_", "-"): value for key, value in attributes.items()},
@@ -106,8 +113,17 @@ def cell_options_patch(
     hide_code = as_bool(values.get("hide-code"))
     if hide_code:
         render = options.setdefault("render", {})
-        render["source"] = False
         render["editor"] = False
+        if not foldable or render.get("codeFold") is False:
+            # Nothing can reveal the code here, so hiding it is the honest
+            # reading: a static format has no disclosure control, and the
+            # author may have opted out of folding outright.
+            render["source"] = False
+        else:
+            # marimo's hide_code collapses a cell's code but keeps it
+            # revealable. Folding preserves that; dropping the source does not.
+            render["source"] = True
+            render.setdefault("codeFold", True)
     elif unparsable:
         render = options.setdefault("render", {})
         render["source"] = True

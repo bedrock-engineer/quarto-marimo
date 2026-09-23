@@ -88,6 +88,7 @@ def static_export(
             root,
             filename=filename,
             global_eval=global_eval,
+            foldable=False,
         )
         page = CompiledMarimoPage.from_json(
             asyncio.run(compile_page(request.to_json()))
