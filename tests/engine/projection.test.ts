@@ -153,3 +153,46 @@ function decodePayload(markdown: string): {
   const bytes = Uint8Array.from(atob(padded), (value) => value.charCodeAt(0));
   return JSON.parse(new TextDecoder().decode(bytes));
 }
+
+Deno.test("emits the author source as a foldable Quarto code block", () => {
+  const source = page();
+  (source.cells[0] as CompiledMarimoCell & { authorSource: unknown })
+    .authorSource = {
+      code: "value = 41 + 1",
+      language: "python",
+      fold: "show",
+      summary: 'The "arithmetic"',
+    };
+
+  const projected = projectInteractivePage(source);
+
+  assertStringIncludes(
+    projected[0],
+    '```{.python .cell-code code-fold="show" code-summary="The \\"arithmetic\\""}',
+  );
+  assertStringIncludes(projected[0], "value = 41 + 1");
+  // The code block precedes the island rather than living inside it.
+  assertEquals(
+    projected[0].indexOf("```{.python") < projected[0].indexOf("{=html}"),
+    true,
+  );
+  // Cells without an author source are untouched.
+  assertEquals(projected[1].startsWith("```{=html}"), true);
+});
+
+Deno.test("keeps the author source out of the island payload", () => {
+  const source = page();
+  (source.cells[0] as CompiledMarimoCell & { authorSource: unknown })
+    .authorSource = {
+      code: "secret = 1",
+      language: "python",
+      fold: false,
+      summary: null,
+    };
+
+  const projected = projectInteractivePage(source);
+  const payload = decodePayload(projected[0]);
+
+  assertEquals("authorSource" in payload.cell, false);
+  assertStringIncludes(projected[0], "```{.python .cell-code}\nsecret = 1");
+});

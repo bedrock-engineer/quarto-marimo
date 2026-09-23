@@ -147,6 +147,15 @@ def execution_options_patch(options: JsonObject) -> JsonObject:
             render[target] = as_bool(options[source])
     if as_bool(render.get("editor")):
         render["source"] = True
+    fold = as_code_fold(options.get("code-fold"))
+    if fold is not None:
+        render["codeFold"] = fold
+        # Quarto folds the code it shows, so asking for a fold asks for the
+        # source, unless the author said otherwise explicitly.
+        if fold is not False and "echo" not in options:
+            render["source"] = True
+    if "code-summary" in options:
+        render["codeSummary"] = str(options["code-summary"])
     if "eval" in options:
         execution["enabled"] = as_bool(options["eval"])
 
@@ -156,6 +165,26 @@ def execution_options_patch(options: JsonObject) -> JsonObject:
     if execution:
         patch["execution"] = execution
     return patch
+
+
+def as_code_fold(value: Any) -> bool | str | None:
+    """Read a `code-fold` value as `True`, `False`, or `"show"`.
+
+    Returns `None` when the option is absent or unrecognized, so callers can
+    tell "not set" apart from "explicitly disabled".
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    normalized = str(value).strip().lower()
+    if normalized == "show":
+        return "show"
+    if normalized == "true":
+        return True
+    if normalized in {"false", "none"}:
+        return False
+    return None
 
 
 def as_bool(value: Any, default: bool = False) -> bool:

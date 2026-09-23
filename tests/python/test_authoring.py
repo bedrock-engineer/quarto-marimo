@@ -98,3 +98,43 @@ def test_sql_class_fence_is_normalized_for_marimo_parser():
     markdown = '```{sql .marimo query="summary"}\nSELECT 1\n```'
 
     assert normalize_markdown(markdown).startswith('```sql {.marimo query="summary"}')
+
+
+def test_code_fold_shows_the_source_it_folds():
+    options = cell_options_patch({"code-fold": True}, {"language": "python"})
+
+    assert options["render"] == {"source": True, "codeFold": True}
+
+
+def test_code_fold_show_starts_expanded():
+    options = cell_options_patch(
+        {"code-fold": "show", "code-summary": "Show the setup"},
+        {"language": "python"},
+    )
+
+    assert options["render"] == {
+        "source": True,
+        "codeFold": "show",
+        "codeSummary": "Show the setup",
+    }
+
+
+def test_explicit_echo_false_wins_over_code_fold():
+    options = cell_options_patch(
+        {"code-fold": True, "echo": False},
+        {"language": "python"},
+    )
+
+    assert options["render"] == {"source": False, "codeFold": True}
+
+
+def test_code_fold_false_leaves_the_source_hidden():
+    options = cell_options_patch({"code-fold": False}, {"language": "python"})
+
+    assert options["render"] == {"codeFold": False}
+
+
+def test_page_level_code_fold_applies_to_every_cell():
+    defaults = execution_options_patch({"code-fold": True})
+
+    assert defaults["render"] == {"source": True, "codeFold": True}

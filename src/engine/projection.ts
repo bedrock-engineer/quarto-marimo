@@ -1,4 +1,5 @@
 import {
+  type CompiledMarimoCell,
   type CompiledMarimoPage,
   encodePageCellPayload,
   type MarimoPageSerializedCellPayload,
@@ -8,10 +9,49 @@ import {
 import type { StaticMarimoOutput } from "./process.ts";
 import { MARIMO_ELEMENT_NAME } from "../island-element.ts";
 
+/** A cell's read-only source, carried alongside the island payload. */
+export type MarimoAuthorSource = {
+  code: string;
+  language: string;
+  fold: boolean | "show";
+  summary: string | null;
+};
+
+type CellWithAuthorSource = CompiledMarimoCell & {
+  authorSource?: MarimoAuthorSource;
+};
+
 export function projectInteractivePage(page: CompiledMarimoPage): string[] {
-  return projectPageCellPayloads(page).map((payload) =>
-    payload ? rawHtml(renderIsland(payload)) : ""
-  );
+  const cells = page.cells as CellWithAuthorSource[];
+  const sources = cells.map((cell) => cell.authorSource);
+  // Keep the source out of the island payload: Quarto renders it as its own
+  // code block, so embedding it again would ship every line twice.
+  const payloadPage: CompiledMarimoPage = {
+    ...page,
+    cells: cells.map(({ authorSource: _authorSource, ...cell }) => cell),
+  };
+  return projectPageCellPayloads(payloadPage).map((payload, index) => {
+    const source = sources[index];
+    const code = source ? authorSourceBlock(source) : "";
+    return code + (payload ? rawHtml(renderIsland(payload)) : "");
+  });
+}
+
+function authorSourceBlock(source: MarimoAuthorSource): string {
+  // `.cell-code` is what Quarto's code folding keys on; without it `code-fold`
+  // is inert, and with it an unfolded block renders exactly as a plain one.
+  const attributes = [`.${source.language}`, ".cell-code"];
+  if (source.fold) {
+    attributes.push(`code-fold="${source.fold === "show" ? "show" : "true"}"`);
+  }
+  if (source.summary) {
+    attributes.push(`code-summary="${escapeAttribute(source.summary)}"`);
+  }
+  return fencedCode(source.code, `{${attributes.join(" ")}}`);
+}
+
+function escapeAttribute(value: string): string {
+  return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
 
 export async function projectStaticPage(

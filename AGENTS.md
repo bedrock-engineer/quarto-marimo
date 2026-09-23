@@ -127,9 +127,14 @@ Document front matter supports:
 - `eval: false` to disable cell execution for the document.
 - `header: |` to add a Python setup cell before authored cells.
 
-Cell `#|` options include `eval`, `echo`, `output`, `server-output`, `error`,
-`include`, `editor`, `hide-code`, `hide-output`, `disabled`, `unparsable`,
-`name`, and `column`. SQL cells also accept `query` and `engine`.
+Cell `#|` options include `eval`, `echo`, `code-fold`, `code-summary`,
+`output`, `server-output`, `error`, `include`, `editor`, `hide-code`,
+`hide-output`, `disabled`, `unparsable`, `name`, and `column`. SQL cells also
+accept `query` and `engine`.
+
+Echoed source is projected as a Quarto code block carrying `.cell-code`, so
+Quarto owns highlighting, the copy button, and folding. `code-fold` implies
+`echo: true`.
 
 ## Generated artifacts
 

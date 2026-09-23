@@ -81,6 +81,8 @@ value
 | --------------- | ------- | -------------------------------------------------- |
 | `eval`          | `true`  | Execute the cell                                   |
 | `echo`          | `false` | Render the authored source                         |
+| `code-fold`     | none    | Fold the source: `true`, `show`, or `false`        |
+| `code-summary`  | `Code`  | Label on the folded source block                   |
 | `output`        | `true`  | Render the cell output                             |
 | `server-output` | `true`  | Include build-time output before browser hydration |
 | `error`         | `true`  | Render execution errors. `false` stops the build   |
@@ -92,6 +94,12 @@ value
 | `unparsable`    | `false` | Preserve source as a non-reactive cell             |
 | `name`          | `_`     | Set the marimo cell name                           |
 | `column`        | none    | Set the marimo layout column                       |
+
+The authored source is emitted as a normal Quarto code block, so it is syntax
+highlighted, gets a copy button, and folds like any other. Setting `code-fold`
+implies `echo: true`, since Quarto folds the code it shows; `code-fold: show`
+renders the block expanded. Both options also work document-wide in the YAML
+header.
 
 SQL cells use the same `.marimo` class:
 
