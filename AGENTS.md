@@ -41,6 +41,11 @@ pixi run pytest tests/python/test_document.py -v
 - `_extensions/marimo/python/quarto_marimo` owns document collection, compiler
   invocation, protocol models, and MIME-aware static output. `extract.py` is
   the subprocess entry point loaded by the TypeScript engine.
+- `quarto_marimo/prerender.py` exports a project's marimo notebooks to Quarto
+  Markdown for a `pre-render` step: marimo's `header:` metadata moves to the
+  `pyproject:` key the engine reads, a leading heading becomes the title, and
+  the page shows its code and fails on cell errors. `prerender.py` is its entry
+  point. It runs outside a render, so it must not import engine state.
 - `src/browser` registers `marimo-quarto-island` through the published
   `@marimo-team/mdx-marimo` bridge and supplies Quarto theme detection.
 - `_extensions/marimo/marimo-engine.js` is the committed release loader. It
