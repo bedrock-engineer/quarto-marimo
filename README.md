@@ -59,7 +59,9 @@ quarto preview
 ```
 
 HTML output remains interactive in the browser. Formats such as PDF receive the
-server-rendered cell output.
+server-rendered cell output. To keep the compiled output in HTML without the browser
+runtime, set `interactive: false` in the document front matter or, for every
+page, in `_quarto.yml`.
 
 ## Cell options
 

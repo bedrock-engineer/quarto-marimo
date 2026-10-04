@@ -57,9 +57,12 @@ function escapeAttribute(value: string): string {
 export async function projectStaticPage(
   outputs: StaticMarimoOutput[],
   htmlToMarkdown: (html: string) => Promise<string>,
+  preserveHtml: boolean = false,
 ): Promise<string[]> {
   return await Promise.all(
-    outputs.map((output) => renderStaticOutput(output, htmlToMarkdown)),
+    outputs.map((output) =>
+      renderStaticOutput(output, htmlToMarkdown, preserveHtml)
+    ),
   );
 }
 
@@ -87,6 +90,7 @@ function renderIsland(payload: MarimoPageSerializedCellPayload): string {
 async function renderStaticOutput(
   output: StaticMarimoOutput,
   htmlToMarkdown: (html: string) => Promise<string>,
+  preserveHtml: boolean,
 ): Promise<string> {
   let result = "";
   if (output.displayCode && output.code) {
@@ -109,7 +113,7 @@ async function renderStaticOutput(
     case "blockquote":
       return `${result}> ${output.value.replace(/\r?\n/g, "\n> ")}\n\n`;
     case "html":
-      if (/<table[\s>]/i.test(output.value)) {
+      if (preserveHtml || /<table[\s>]/i.test(output.value)) {
         return `${result}${rawHtml(output.value)}`;
       }
       return `${result}${await htmlToMarkdown(output.value)}\n\n`;

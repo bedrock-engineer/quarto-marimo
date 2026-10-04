@@ -131,6 +131,8 @@ applies to every page of the project:
 - `external-env: true` to run compilation in the active Python environment.
 - `pyproject: |` to declare dependencies for the `uv` sandbox.
 - `eval: false` to disable cell execution for the document.
+- `interactive: false` to force static projection for HTML-compatible formats,
+  skipping the browser runtime and keeping only compiled cell output.
 - `header: |` to add a Python setup cell before authored cells.
 
 Cell `#|` options include `eval`, `echo`, `code-fold`, `code-summary`,
