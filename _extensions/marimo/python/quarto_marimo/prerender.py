@@ -1,15 +1,22 @@
 """Export the marimo notebooks in a Quarto project to Quarto Markdown.
 
-`marimo export md --flavor qmd` writes a page this engine almost understands.
-Two things are left over: the inline script metadata lands under `header:`,
-which the engine does not read for dependencies, and the exporter records its
-own `marimo-version:`. This module fixes both and writes the result next to the
-notebook, so a Quarto `pre-render` step can keep `.qmd` pages in sync with the
-notebooks they come from.
+`marimo export md --flavor qmd` writes a page this engine renders, with a few
+things left over. The inline script metadata lands under `header:`, which the
+engine runs as a setup cell rather than reading for dependencies, and the
+exporter records its own `marimo-version:`. The exporter also titles the page
+after the file name, so a notebook that opens with a heading gets two titles.
+And a notebook shows its code in the editor, hiding only the cells the author
+collapsed, while a page shows no code unless asked.
+
+This module settles all of that and writes the page next to the notebook, so a
+Quarto `pre-render` step keeps `.qmd` pages in sync with the notebooks they come
+from. The engine claims the page by its cell fences; no `engine:` line is
+needed.
 """
 
 from __future__ import annotations
 
+import json
 import os
 import re
 import subprocess
@@ -24,7 +31,14 @@ if TYPE_CHECKING:
 
 NOTEBOOK_APP_REGEX = re.compile(r"^\w+\s*=\s*marimo\.App\(", re.MULTILINE)
 FRONTMATTER_REGEX = re.compile(r"\A---\n(?P<front>.*?\n)---\n(?P<body>.*)\Z", re.DOTALL)
+LEADING_HEADING_REGEX = re.compile(r"\A\s*# (?P<title>[^\n]+)\n")
 DROPPED_KEYS = ("marimo-version",)
+
+# A notebook shows its code in the editor and folds what the author hid, so the
+# page does the same; `hide_code` cells fold through the engine's cell options.
+# A cell error on a notebook page is a broken page, so it fails the render, as
+# Quarto's own engines do.
+PAGE_OPTIONS = ("echo: true", "error: false")
 
 
 def find_notebooks(project_dir: Path) -> list[Path]:
@@ -86,7 +100,20 @@ def export_markdown(notebook: Path) -> str:
     return result.stdout
 
 
-def rewrite_frontmatter(front: str) -> str:
+def promote_title(body: str) -> tuple[str | None, str]:
+    """Split a leading level-one heading off the body as the page title.
+
+    The exporter titles a page after its file name. When the notebook opens
+    with a heading, that heading is the title the author chose, and leaving it
+    in the body would print it a second time under Quarto's.
+    """
+    match = LEADING_HEADING_REGEX.match(body)
+    if match is None:
+        return None, body.lstrip("\n")
+    return match.group("title").strip(), body[match.end() :].lstrip("\n")
+
+
+def rewrite_frontmatter(front: str, title: str | None = None) -> str:
     """Point the exported frontmatter at the keys this engine reads.
 
     Only top-level keys are touched; block scalar bodies are indented and pass
@@ -102,9 +129,11 @@ def rewrite_frontmatter(front: str) -> str:
             # strip the trailing newline the script metadata block needs.
             lines.append("pyproject: |")
             continue
+        if key == "title" and title is not None:
+            lines.append(f"title: {json.dumps(title, ensure_ascii=False)}")
+            continue
         lines.append(line)
-    if not any(line.startswith("engine:") for line in lines):
-        lines.insert(0, "engine: marimo")
+    lines.extend(PAGE_OPTIONS)
     return "\n".join(lines) + "\n"
 
 
@@ -114,10 +143,10 @@ def convert(notebook: Path, transform: Transform | None = None) -> str:
     match = FRONTMATTER_REGEX.match(exported)
     if match is None:
         raise RuntimeError(f"marimo exported {notebook} without frontmatter")
-    body = match.group("body")
+    title, body = promote_title(match.group("body"))
     if transform is not None:
         body = transform(body, notebook)
-    return f"---\n{rewrite_frontmatter(match.group('front'))}---\n{body}"
+    return f"---\n{rewrite_frontmatter(match.group('front'), title)}---\n\n{body}"
 
 
 def write_if_changed(path: Path, content: str) -> bool:

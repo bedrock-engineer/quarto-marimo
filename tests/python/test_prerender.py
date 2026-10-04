@@ -37,6 +37,10 @@ value = 1
 ```
 """
 
+EXPORTED_WITH_HEADING = EXPORTED.replace(
+    "---\n\n```", "---\n\n# Getting started with Demo\n\nIntro paragraph.\n\n```"
+)
+
 
 def write_notebook(path: Path) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -73,18 +77,36 @@ def test_frontmatter_points_at_the_keys_the_engine_reads():
     )
 
     assert front == (
-        "engine: marimo\n"
         "title: Getting Started\n"
         "pyproject: |\n"
         "  # /// script\n"
         "  # ///\n"
+        "echo: true\n"
+        "error: false\n"
     )
 
 
-def test_an_existing_engine_is_left_alone():
-    front = prerender.rewrite_frontmatter("engine: jupyter\ntitle: Kept\n")
+def test_a_promoted_title_replaces_the_exporters_title():
+    front = prerender.rewrite_frontmatter(
+        "title: Getting Started\nwidth: medium\n", title="Getting started: SymEval"
+    )
 
-    assert front == "engine: jupyter\ntitle: Kept\n"
+    assert front == (
+        'title: "Getting started: SymEval"\nwidth: medium\necho: true\nerror: false\n'
+    )
+
+
+def test_a_leading_heading_becomes_the_title():
+    title, body = prerender.promote_title("\n# Getting started with Demo\n\nIntro.\n")
+
+    assert title == "Getting started with Demo"
+    assert body == "Intro.\n"
+
+
+def test_a_body_without_a_leading_heading_keeps_the_exporters_title():
+    body = "Intro first.\n\n# Not the title\n"
+
+    assert prerender.promote_title("\n" + body) == (None, body)
 
 
 def test_convert_rewrites_frontmatter_and_keeps_the_body(tmp_path, monkeypatch):
@@ -93,10 +115,25 @@ def test_convert_rewrites_frontmatter_and_keeps_the_body(tmp_path, monkeypatch):
 
     page = prerender.convert(notebook)
 
-    assert page.startswith("---\nengine: marimo\ntitle: Getting Started\n")
+    assert page.startswith("---\ntitle: Getting Started\n")
     assert "pyproject: |" in page
     assert "marimo-version" not in page
     assert "```{marimo .python}\nvalue = 1\n```" in page
+
+
+def test_convert_titles_the_page_after_its_leading_heading(tmp_path, monkeypatch):
+    notebook = write_notebook(tmp_path / "getting_started.py")
+    monkeypatch.setattr(
+        prerender, "export_markdown", lambda _notebook: EXPORTED_WITH_HEADING
+    )
+
+    page = prerender.convert(notebook)
+
+    _, front, body = page.split("---\n", 2)
+    assert 'title: "Getting started with Demo"' in front
+    assert "Getting Started" not in front
+    assert body.startswith("\nIntro paragraph.\n")
+    assert "# Getting started" not in body
 
 
 def test_convert_runs_the_transform_on_the_body_only(tmp_path, monkeypatch):
@@ -107,7 +144,7 @@ def test_convert_runs_the_transform_on_the_body_only(tmp_path, monkeypatch):
 
     _, front, body = page.split("---\n", 2)
     assert "badge" not in front
-    assert body.startswith("::: badge\n:::\n")
+    assert body.startswith("\n::: badge\n:::\n")
     assert "```{marimo .python}\nvalue = 1\n```" in body
 
 

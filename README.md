@@ -109,15 +109,25 @@ Markdown cell should join the page app.
 
 ## Notebook pages
 
-`marimo export md --flavor qmd` turns a notebook into a page this engine can
-render, but it files the inline script metadata under `header:`, which is not
-where dependencies are read from. The packaged pre-render step exports every
-notebook in the project and fixes that up:
+`marimo export md --flavor qmd` turns a notebook into a page this engine
+renders, except that it files the inline script metadata under `header:`,
+which the engine runs as a setup cell rather than reading for dependencies.
+The packaged pre-render step exports every notebook in the project and makes
+each one a page:
 
 ```yaml
 project:
   pre-render: python _extensions/marimo-team/marimo/python/prerender.py
 ```
+
+- `header:` becomes `pyproject:`, so the notebook's own dependencies build the
+  sandbox.
+- A heading that opens the notebook becomes the page title, in place of the
+  one the exporter derives from the file name.
+- The page shows its code and folds the cells the notebook hides, as the
+  editor does, and a cell error fails the render, as it does for Quarto's own
+  engines. Both are page options (`echo: true`, `error: false`) a cell can
+  override with its own `#|` lines.
 
 Each `.py` notebook becomes a `.qmd` beside it, so the notebook's place in the
 project decides the page URL, and underscores in the stem become dashes.
