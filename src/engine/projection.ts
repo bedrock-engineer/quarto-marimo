@@ -90,7 +90,12 @@ async function renderStaticOutput(
 ): Promise<string> {
   let result = "";
   if (output.displayCode && output.code) {
-    result += fencedCode(output.code, output.language);
+    result += authorSourceBlock({
+      code: output.code,
+      language: output.language,
+      fold: output.fold,
+      summary: output.summary,
+    });
   }
   if (!output.value) return result;
 

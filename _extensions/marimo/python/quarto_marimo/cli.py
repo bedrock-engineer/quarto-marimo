@@ -34,11 +34,21 @@ def convert_markdown(
     filename: str,
     interactive: bool,
     global_eval: bool = True,
+    foldable: bool = False,
 ) -> dict[str, Any]:
+    """Compile one document.
+
+    `foldable` says whether static output lands in a format that can still
+    collapse code, which is HTML rendered without the browser runtime.
+    """
     callback = (
         interactive_export(filename=filename, global_eval=global_eval)
         if interactive
-        else static_export(filename=filename, global_eval=global_eval)
+        else static_export(
+            filename=filename,
+            global_eval=global_eval,
+            foldable=foldable,
+        )
     )
 
     class QuartoMarimoParser(MarimoMdParser):
@@ -82,13 +92,14 @@ def static_export(
     *,
     filename: str,
     global_eval: bool,
+    foldable: bool,
 ) -> ExportCallback:
     def export(root: Element) -> SafeWrap:
         request = collect_page(
             root,
             filename=filename,
             global_eval=global_eval,
-            foldable=False,
+            foldable=foldable,
         )
         page = CompiledMarimoPage.from_json(
             asyncio.run(compile_page(request.to_json()))
@@ -110,6 +121,8 @@ def main(argv: list[str] | None = None) -> int:
     reference_file, output_mode = args[:2]
     global_eval = args[2].lower() == "yes" if len(args) == 3 else True
     interactive = output_mode.lower() == "html"
+    # Only HTML can fold code, whether or not the page keeps its runtime.
+    foldable = output_mode.lower() in ("html", "html-static")
     os.environ["MARIMO_NO_JS"] = str(not interactive).lower()
 
     # The engine always sends UTF-8 bytes. Bypass the locale-dependent text
@@ -123,6 +136,7 @@ def main(argv: list[str] | None = None) -> int:
             filename=reference_file,
             interactive=interactive,
             global_eval=global_eval,
+            foldable=foldable,
         )
     sys.stdout.buffer.write(json.dumps(result).encode("utf-8"))
     sys.stdout.flush()

@@ -126,3 +126,26 @@ def test_main_reads_utf8_stdin_under_a_non_utf8_locale(monkeypatch):
     result = json.loads(stdout.buffer.getvalue().decode("utf-8"))
     assert result["kind"] == "static"
     assert "こんにちわ" in result["outputs"][0]["value"]
+
+
+HIDDEN_CODE = """
+```{python .marimo hide_code="true"}
+value = 2
+value + 3
+```
+"""
+
+
+def test_hidden_code_folds_on_static_html():
+    result = convert_markdown(
+        HIDDEN_CODE, filename="page.qmd", interactive=False, foldable=True
+    )
+
+    assert result["outputs"][0]["displayCode"] is True
+    assert result["outputs"][0]["fold"] is True
+
+
+def test_hidden_code_stays_hidden_where_nothing_can_reveal_it():
+    result = convert_markdown(HIDDEN_CODE, filename="page.qmd", interactive=False)
+
+    assert result["outputs"][0]["displayCode"] is False
