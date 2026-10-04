@@ -4,12 +4,11 @@ from __future__ import annotations
 
 import json
 import re
-from typing import TYPE_CHECKING, Any
+from typing import Any
+
+from marimo._convert.markdown.to_ir import extract_frontmatter
 
 from quarto_marimo.protocol import JsonObject
-
-if TYPE_CHECKING:
-    from xml.etree.ElementTree import Element
 
 SQL_DOT_FENCE_REGEX = re.compile(
     r"^(\s*`{3,})\s*\{\s*sql\s*\.marimo(?P<attrs>[^}]*)\}\s*$",
@@ -21,8 +20,15 @@ def normalize_markdown(markdown: str) -> str:
     return SQL_DOT_FENCE_REGEX.sub(r"\1sql {.marimo\g<attrs>}", markdown)
 
 
-def page_options_from_root(root: Element) -> JsonObject:
-    options = dict(root.items())
+def document_options(markdown: str) -> JsonObject:
+    """Read the document's YAML header as the page options.
+
+    marimo's parser copies only string values from the header onto the document
+    root, so a YAML boolean such as `echo: true` never arrives there, and Quarto
+    rejects the quoted form. The header itself is the source.
+    """
+    header, _body = extract_frontmatter(markdown)
+    options: JsonObject = dict(header) if isinstance(header, dict) else {}
     options.pop("marimo-version", None)
     return options
 

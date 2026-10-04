@@ -17,10 +17,10 @@ from marimo._convert.markdown.to_ir import (
     SafeWrap as SafeWrapGeneric,
 )
 
-from quarto_marimo.authoring import normalize_markdown
+from quarto_marimo.authoring import document_options, normalize_markdown
 from quarto_marimo.compiler import compile_page
 from quarto_marimo.document import collect_page
-from quarto_marimo.protocol import CompiledMarimoPage
+from quarto_marimo.protocol import CompiledMarimoPage, JsonObject
 from quarto_marimo.static import render_static_page
 
 ConversionResult = dict[str, Any]
@@ -35,10 +35,12 @@ def convert_markdown(
     interactive: bool,
     global_eval: bool = True,
 ) -> dict[str, Any]:
-    callback = (
-        interactive_export(filename=filename, global_eval=global_eval)
-        if interactive
-        else static_export(filename=filename, global_eval=global_eval)
+    page_options = document_options(text)
+    export = interactive_export if interactive else static_export
+    callback = export(
+        filename=filename,
+        global_eval=global_eval,
+        page_options=page_options,
     )
 
     class QuartoMarimoParser(MarimoMdParser):
@@ -54,12 +56,14 @@ def interactive_export(
     *,
     filename: str,
     global_eval: bool,
+    page_options: JsonObject,
 ) -> ExportCallback:
     def export(root: Element) -> SafeWrap:
         request = collect_page(
             root,
             filename=filename,
             global_eval=global_eval,
+            page_options=page_options,
         )
         page = asyncio.run(
             compile_page(
@@ -82,12 +86,14 @@ def static_export(
     *,
     filename: str,
     global_eval: bool,
+    page_options: JsonObject,
 ) -> ExportCallback:
     def export(root: Element) -> SafeWrap:
         request = collect_page(
             root,
             filename=filename,
             global_eval=global_eval,
+            page_options=page_options,
         )
         page = CompiledMarimoPage.from_json(
             asyncio.run(compile_page(request.to_json()))

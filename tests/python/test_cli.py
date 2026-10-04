@@ -126,3 +126,22 @@ def test_main_reads_utf8_stdin_under_a_non_utf8_locale(monkeypatch):
     result = json.loads(stdout.buffer.getvalue().decode("utf-8"))
     assert result["kind"] == "static"
     assert "こんにちわ" in result["outputs"][0]["value"]
+
+
+def test_header_options_apply_to_every_cell():
+    result = convert_markdown(
+        "---\necho: true\n---\n\n```{python .marimo}\nvalue = 2\nvalue + 3\n```",
+        filename="page.qmd",
+        interactive=False,
+    )
+
+    assert result["outputs"][0]["displayCode"] is True
+
+
+def test_header_error_false_fails_the_render_on_a_cell_error():
+    with pytest.raises(RuntimeError, match="marimo execution failed"):
+        convert_markdown(
+            "---\nerror: false\n---\n\n```{python .marimo}\n1 / 0\n```",
+            filename="page.qmd",
+            interactive=False,
+        )

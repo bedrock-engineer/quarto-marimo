@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from quarto_marimo.authoring import (
     cell_options_patch,
+    document_options,
     execution_options_patch,
     extract_cell_config,
     normalize_markdown,
@@ -98,3 +99,15 @@ def test_sql_class_fence_is_normalized_for_marimo_parser():
     markdown = '```{sql .marimo query="summary"}\nSELECT 1\n```'
 
     assert normalize_markdown(markdown).startswith('```sql {.marimo query="summary"}')
+
+
+def test_document_options_keep_the_header_types():
+    options = document_options(
+        "---\ntitle: Page\necho: true\nerror: false\nmarimo-version: 0.25.1\n---\n\nbody\n"
+    )
+
+    assert options == {"title": "Page", "echo": True, "error": False}
+
+
+def test_document_options_are_empty_without_a_header():
+    assert document_options("```{python .marimo}\nvalue = 1\n```\n") == {}
