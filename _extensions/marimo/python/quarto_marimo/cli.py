@@ -108,6 +108,8 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("expected reference file, output mode, and optional eval mode")
     reference_file, output_mode = args[:2]
     global_eval = args[2].lower() == "yes" if len(args) == 3 else True
+    # `html` is an interactive page; `html-static` is an HTML format rendered
+    # without the browser runtime; `static` is every other format.
     interactive = output_mode.lower() == "html"
     os.environ["MARIMO_NO_JS"] = str(not interactive).lower()
 

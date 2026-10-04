@@ -36,6 +36,7 @@ export async function runMarimoCompiler(
     source: string;
     input: string;
     interactive: boolean;
+    htmlCompatible: boolean;
     globalEval: boolean;
     externalEnv: boolean;
     pyproject: string;
@@ -62,7 +63,7 @@ export async function runMarimoCompiler(
   }
   args.push(
     options.input,
-    options.interactive ? "html" : "static",
+    outputMode(options),
     options.globalEval ? "yes" : "no",
   );
 
@@ -77,6 +78,19 @@ export async function runMarimoCompiler(
   const value: unknown = JSON.parse(output);
   if (isPageExecution(value) || isStaticExecution(value)) return value;
   throw new TypeError("marimo compiler returned an invalid execution payload");
+}
+
+/**
+ * The output the compiler is asked for: an interactive page, the static
+ * projection of an HTML format, or static output for every other format.
+ * Static HTML keeps what a browser can still do without the runtime, such as
+ * fold code, which is why it is named apart from PDF and friends.
+ */
+export function outputMode(
+  options: { interactive: boolean; htmlCompatible: boolean },
+): "html" | "html-static" | "static" {
+  if (options.interactive) return "html";
+  return options.htmlCompatible ? "html-static" : "static";
 }
 
 async function constructUvCommand(

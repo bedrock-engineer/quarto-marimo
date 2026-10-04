@@ -2,7 +2,11 @@ import { assertEquals, assertRejects } from "@std/assert";
 
 import type { QuartoAPI } from "@quarto/types";
 
-import { executeProcess, runMarimoCompiler } from "../../src/engine/process.ts";
+import {
+  executeProcess,
+  outputMode,
+  runMarimoCompiler,
+} from "../../src/engine/process.ts";
 
 Deno.test({
   name: "external environments use QUARTO_PYTHON",
@@ -26,6 +30,7 @@ Deno.test({
         source: "",
         input: "page.qmd",
         interactive: false,
+        htmlCompatible: false,
         globalEval: true,
         externalEnv: true,
         pyproject: "",
@@ -94,4 +99,22 @@ Deno.test({
       await Deno.remove(command);
     }
   },
+});
+
+Deno.test("an interactive page asks for html", () => {
+  assertEquals(outputMode({ interactive: true, htmlCompatible: true }), "html");
+});
+
+Deno.test("an HTML format without the runtime asks for html-static", () => {
+  assertEquals(
+    outputMode({ interactive: false, htmlCompatible: true }),
+    "html-static",
+  );
+});
+
+Deno.test("every other format asks for static output", () => {
+  assertEquals(
+    outputMode({ interactive: false, htmlCompatible: false }),
+    "static",
+  );
 });

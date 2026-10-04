@@ -146,7 +146,7 @@ const marimoEngineDiscovery: ExecutionEngineDiscovery = {
       const htmlCompatible = quarto.format.isHtmlCompatible(options.format);
       const interactive = isInteractiveFormat(
         htmlCompatible,
-        options.target.metadata,
+        options.format.metadata,
       );
       const execution = await quarto.console.withSpinner(
         { message: "Executing marimo cells..." },
@@ -156,6 +156,7 @@ const marimoEngineDiscovery: ExecutionEngineDiscovery = {
             source: options.target.markdown.value,
             input: options.target.input,
             interactive,
+            htmlCompatible,
             globalEval: options.target.metadata.eval !== false,
             externalEnv: options.target.metadata["external-env"] === true,
             pyproject: String(options.target.metadata.pyproject ?? ""),
