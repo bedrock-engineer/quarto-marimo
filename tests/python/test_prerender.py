@@ -103,6 +103,27 @@ def test_a_leading_heading_becomes_the_title():
     assert body == "Intro.\n"
 
 
+def test_the_heading_may_follow_the_notebook_imports():
+    body = (
+        "```{marimo .python}\nimport marimo as mo\n```\n\n"
+        "# 1 - The database\n\nIntro.\n\n# Not the title\n"
+    )
+
+    title, rest = prerender.promote_title(body)
+
+    assert title == "1 - The database"
+    assert (
+        rest
+        == "```{marimo .python}\nimport marimo as mo\n```\n\nIntro.\n\n# Not the title\n"
+    )
+
+
+def test_a_heading_inside_a_cell_is_not_a_title():
+    body = '```{marimo .python}\nmo.md("# Inside")\n```\n\nIntro.\n'
+
+    assert prerender.promote_title(body) == (None, body)
+
+
 def test_a_body_without_a_leading_heading_keeps_the_exporters_title():
     body = "Intro first.\n\n# Not the title\n"
 

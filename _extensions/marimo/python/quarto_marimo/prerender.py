@@ -31,7 +31,8 @@ if TYPE_CHECKING:
 
 NOTEBOOK_APP_REGEX = re.compile(r"^\w+\s*=\s*marimo\.App\(", re.MULTILINE)
 FRONTMATTER_REGEX = re.compile(r"\A---\n(?P<front>.*?\n)---\n(?P<body>.*)\Z", re.DOTALL)
-LEADING_HEADING_REGEX = re.compile(r"\A\s*# (?P<title>[^\n]+)\n")
+HEADING_REGEX = re.compile(r"# (?P<title>\S[^\n]*)")
+FENCE_REGEX = re.compile(r"(`{3,}|~{3,})")
 DROPPED_KEYS = ("marimo-version",)
 
 # A notebook shows its code in the editor and folds what the author hid, so the
@@ -101,16 +102,35 @@ def export_markdown(notebook: Path) -> str:
 
 
 def promote_title(body: str) -> tuple[str | None, str]:
-    """Split a leading level-one heading off the body as the page title.
+    """Split the notebook's opening heading off the body as the page title.
 
     The exporter titles a page after its file name. When the notebook opens
-    with a heading, that heading is the title the author chose, and leaving it
-    in the body would print it a second time under Quarto's.
+    with a level-one heading, that heading is the title the author chose, and
+    leaving it in the body would print it a second time under Quarto's. Code
+    cells before it do not count as content: a notebook often starts with
+    `import marimo as mo`.
     """
-    match = LEADING_HEADING_REGEX.match(body)
-    if match is None:
-        return None, body.lstrip("\n")
-    return match.group("title").strip(), body[match.end() :].lstrip("\n")
+    lines = body.split("\n")
+    fence: str | None = None
+    for index, line in enumerate(lines):
+        if fence is not None:
+            if line.startswith(fence):
+                fence = None
+            continue
+        if not line.strip():
+            continue
+        opening = FENCE_REGEX.match(line)
+        if opening is not None:
+            fence = opening.group(1)
+            continue
+        heading = HEADING_REGEX.fullmatch(line)
+        if heading is None:
+            break
+        rest = lines[:index] + lines[index + 1 :]
+        if index < len(rest) and not rest[index].strip():
+            del rest[index]  # the blank line that separated the heading
+        return heading.group("title").strip(), "\n".join(rest).lstrip("\n")
+    return None, body.lstrip("\n")
 
 
 def rewrite_frontmatter(front: str, title: str | None = None) -> str:
