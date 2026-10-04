@@ -152,6 +152,8 @@ Deno.test("preserves non-table html output when preserveHtml is true", async () 
       displayCode: false,
       code: "",
       language: "python",
+      fold: false,
+      summary: null,
     }],
     (html) => Promise.resolve(html),
     true,

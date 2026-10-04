@@ -78,7 +78,7 @@ const marimoEngineDiscovery: ExecutionEngineDiscovery = {
     return false;
   },
 
-  canFreeze: false,
+  canFreeze: true,
   generatesFigures: true,
 
   checkInstallation: async (configuration: CheckConfiguration) => {
@@ -185,25 +185,33 @@ const marimoEngineDiscovery: ExecutionEngineDiscovery = {
             : cell.sourceVerbatim.value
         )
         .join("");
-      const includes: PandocIncludes = {};
-      if (execution.kind === "page") {
-        const extensionDir = dirname(fromFileUrl(import.meta.url));
-        includes["include-in-header"] = [
-          writeBrowserHeader(extensionDir, options.tempDir),
-        ];
-      }
+      // The browser runtime is declared as a dependency rather than written
+      // here, so that a frozen result thaws with its runtime: Quarto stores
+      // the dependencies with the result and asks for them on every render,
+      // while an include written into this render's temp dir would be gone.
       return {
         engine: "marimo",
         markdown,
         supporting: [],
         filters: [],
-        includes,
+        engineDependencies: execution.kind === "page"
+          ? { marimo: [BROWSER_RUNTIME] }
+          : undefined,
       };
     },
 
     dependencies: (
-      _options: DependenciesOptions,
-    ): Promise<DependenciesResult> => Promise.resolve({ includes: {} }),
+      options: DependenciesOptions,
+    ): Promise<DependenciesResult> => {
+      const includes: PandocIncludes = {};
+      if (needsBrowserRuntime(options.dependencies)) {
+        const extensionDir = dirname(fromFileUrl(import.meta.url));
+        includes["include-in-header"] = [
+          writeBrowserHeader(extensionDir, options.tempDir),
+        ];
+      }
+      return Promise.resolve({ includes });
+    },
 
     postprocess: (_options: PostProcessOptions): Promise<void> =>
       Promise.resolve(),
@@ -230,6 +238,15 @@ export function isInteractiveFormat(
   metadata: Record<string, unknown>,
 ): boolean {
   return isHtmlCompatible && metadata.interactive !== false;
+}
+
+/** The one engine dependency: an interactive page needs the islands runtime. */
+export const BROWSER_RUNTIME = "browser-runtime";
+
+export function needsBrowserRuntime(
+  dependencies: unknown[] | undefined,
+): boolean {
+  return (dependencies ?? []).includes(BROWSER_RUNTIME);
 }
 
 async function htmlToMarkdown(html: string): Promise<string> {
