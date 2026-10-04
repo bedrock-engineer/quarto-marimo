@@ -73,12 +73,17 @@ Deno.test("preserves verbatim source and plain-text output", async () => {
         displayCode: true,
         code: 'value = "```"',
         language: "python",
+        fold: false,
+        summary: null,
       },
     ],
     (html) => Promise.resolve(html),
   );
 
-  assertStringIncludes(projected[0], '````python\nvalue = "```"\n````');
+  assertStringIncludes(
+    projected[0],
+    '````{.python .cell-code}\nvalue = "```"\n````',
+  );
   assertStringIncludes(projected[0], "```\n# Result\n*literal*\n```");
 });
 
@@ -90,6 +95,8 @@ Deno.test("keeps multiline static errors in one blockquote", async () => {
       displayCode: false,
       code: "",
       language: "python",
+      fold: false,
+      summary: null,
     }],
     (html) => Promise.resolve(html),
   );
@@ -105,6 +112,8 @@ Deno.test("preserves Markdown characters in figure destinations", async () => {
       displayCode: false,
       code: "",
       language: "python",
+      fold: false,
+      summary: null,
     }],
     (html) => Promise.resolve(html),
   );
@@ -123,6 +132,8 @@ Deno.test("uses a raw HTML fence longer than its content", async () => {
       displayCode: false,
       code: "",
       language: "python",
+      fold: false,
+      summary: null,
     }],
     (html) => Promise.resolve(html),
   );
@@ -153,3 +164,66 @@ function decodePayload(markdown: string): {
   const bytes = Uint8Array.from(atob(padded), (value) => value.charCodeAt(0));
   return JSON.parse(new TextDecoder().decode(bytes));
 }
+
+Deno.test("emits the author source as a foldable Quarto code block", () => {
+  const source = page();
+  (source.cells[0] as CompiledMarimoCell & { authorSource: unknown })
+    .authorSource = {
+      code: "value = 41 + 1",
+      language: "python",
+      fold: "show",
+      summary: 'The "arithmetic"',
+    };
+
+  const projected = projectInteractivePage(source);
+
+  assertStringIncludes(
+    projected[0],
+    '```{.python .cell-code code-fold="show" code-summary="The \\"arithmetic\\""}',
+  );
+  assertStringIncludes(projected[0], "value = 41 + 1");
+  // The code block precedes the island rather than living inside it.
+  assertEquals(
+    projected[0].indexOf("```{.python") < projected[0].indexOf("{=html}"),
+    true,
+  );
+  // Cells without an author source are untouched.
+  assertEquals(projected[1].startsWith("```{=html}"), true);
+});
+
+Deno.test("keeps the author source out of the island payload", () => {
+  const source = page();
+  (source.cells[0] as CompiledMarimoCell & { authorSource: unknown })
+    .authorSource = {
+      code: "secret = 1",
+      language: "python",
+      fold: false,
+      summary: null,
+    };
+
+  const projected = projectInteractivePage(source);
+  const payload = decodePayload(projected[0]);
+
+  assertEquals("authorSource" in payload.cell, false);
+  assertStringIncludes(projected[0], "```{.python .cell-code}\nsecret = 1");
+});
+
+Deno.test("folds static source the way a page does", async () => {
+  const [projected] = await projectStaticPage(
+    [{
+      type: "plain",
+      value: "1",
+      displayCode: true,
+      code: "value = 1",
+      language: "python",
+      fold: true,
+      summary: "Setup",
+    }],
+    (html) => Promise.resolve(html),
+  );
+
+  assertStringIncludes(
+    projected,
+    '```{.python .cell-code code-fold="true" code-summary="Setup"}\nvalue = 1\n```',
+  );
+});

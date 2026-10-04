@@ -145,3 +145,26 @@ def test_header_error_false_fails_the_render_on_a_cell_error():
             filename="page.qmd",
             interactive=False,
         )
+
+
+HIDDEN_CODE = """
+```{python .marimo hide_code="true"}
+value = 2
+value + 3
+```
+"""
+
+
+def test_hidden_code_folds_on_static_html():
+    result = convert_markdown(
+        HIDDEN_CODE, filename="page.qmd", interactive=False, foldable=True
+    )
+
+    assert result["outputs"][0]["displayCode"] is True
+    assert result["outputs"][0]["fold"] is True
+
+
+def test_hidden_code_stays_hidden_where_nothing_can_reveal_it():
+    result = convert_markdown(HIDDEN_CODE, filename="page.qmd", interactive=False)
+
+    assert result["outputs"][0]["displayCode"] is False

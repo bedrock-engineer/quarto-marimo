@@ -116,7 +116,12 @@ def test_page_defaults_and_setup_cells_share_the_runtime():
 
     assert page.app is not None
     assert page.app.runtime_cell_count == 2
-    assert "<pre><code" in page.cells[0].html
+    # The echoed source travels as data so the projection can emit a real
+    # Pandoc code block; only the output stays in the island HTML.
+    assert page.cells[0].author_source is not None
+    assert page.cells[0].author_source["code"] == "seed + 1"
+    assert page.cells[0].author_source["language"] == "python"
+    assert "<pre><code" not in page.cells[0].html
     assert "5" in page.cells[0].html
 
 
@@ -238,3 +243,41 @@ def test_markdown_compiles_when_a_marimo_symbol_uses_the_mo_name():
 
 def compile_request(request: MarimoPageRequest) -> CompiledMarimoPage:
     return CompiledMarimoPage.from_json(asyncio.run(compile_page(request.to_json())))
+
+
+def test_code_fold_options_reach_the_author_source():
+    page_request = request("value = 41 + 1")
+    page_request = MarimoPageRequest(
+        identity=page_request.identity,
+        filename=page_request.filename,
+        metadata=page_request.metadata,
+        cells=(
+            MarimoCellRequest(
+                index=0,
+                source="value = 41 + 1",
+                options={
+                    "language": "python",
+                    "render": {
+                        "source": True,
+                        "codeFold": "show",
+                        "codeSummary": "The arithmetic",
+                    },
+                },
+            ),
+        ),
+    )
+
+    page = compile_request(page_request)
+
+    assert page.cells[0].author_source == {
+        "code": "value = 41 + 1",
+        "language": "python",
+        "fold": "show",
+        "summary": "The arithmetic",
+    }
+
+
+def test_cells_without_echo_carry_no_author_source():
+    page = compile_request(request("value = 1"))
+
+    assert page.cells[0].author_source is None

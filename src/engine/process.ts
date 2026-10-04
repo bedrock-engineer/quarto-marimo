@@ -23,6 +23,8 @@ export type StaticMarimoOutput = {
   displayCode: boolean;
   code: string;
   language: string;
+  fold: boolean | "show";
+  summary: string | null;
 };
 
 export type MarimoExecution =
@@ -224,7 +226,9 @@ function isStaticOutput(value: unknown): value is StaticMarimoOutput {
     typeof value.value === "string" &&
     typeof value.displayCode === "boolean" &&
     typeof value.code === "string" &&
-    typeof value.language === "string"
+    typeof value.language === "string" &&
+    (typeof value.fold === "boolean" || value.fold === "show") &&
+    (value.summary === null || typeof value.summary === "string")
   );
 }
 

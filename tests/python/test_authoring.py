@@ -51,13 +51,17 @@ def test_unparsable_cells_render_source_and_disable_execution():
     assert options["render"]["source"] is True
 
 
-def test_hide_code_hides_unparsable_source():
+def test_hide_code_folds_unparsable_source():
     options = cell_options_patch(
         {"unparsable": True, "echo": True, "editor": True},
         {"language": "python", "hide_code": "true"},
     )
 
-    assert options["render"] == {"source": False, "editor": False}
+    assert options["render"] == {
+        "source": True,
+        "editor": False,
+        "codeFold": True,
+    }
 
 
 def test_hide_output_suppresses_compiled_output():
@@ -111,3 +115,89 @@ def test_document_options_keep_the_header_types():
 
 def test_document_options_are_empty_without_a_header():
     assert document_options("```{python .marimo}\nvalue = 1\n```\n") == {}
+
+
+def test_code_fold_shows_the_source_it_folds():
+    options = cell_options_patch({"code-fold": True}, {"language": "python"})
+
+    assert options["render"] == {"source": True, "codeFold": True}
+
+
+def test_code_fold_show_starts_expanded():
+    options = cell_options_patch(
+        {"code-fold": "show", "code-summary": "Show the setup"},
+        {"language": "python"},
+    )
+
+    assert options["render"] == {
+        "source": True,
+        "codeFold": "show",
+        "codeSummary": "Show the setup",
+    }
+
+
+def test_explicit_echo_false_wins_over_code_fold():
+    options = cell_options_patch(
+        {"code-fold": True, "echo": False},
+        {"language": "python"},
+    )
+
+    assert options["render"] == {"source": False, "codeFold": True}
+
+
+def test_code_fold_false_leaves_the_source_hidden():
+    options = cell_options_patch({"code-fold": False}, {"language": "python"})
+
+    assert options["render"] == {"codeFold": False}
+
+
+def test_page_level_code_fold_applies_to_every_cell():
+    defaults = execution_options_patch({"code-fold": True})
+
+    assert defaults["render"] == {"source": True, "codeFold": True}
+
+
+def test_hide_code_keeps_the_code_revealable():
+    options = cell_options_patch({}, {"language": "python", "hide_code": "true"})
+
+    assert options["render"] == {
+        "source": True,
+        "editor": False,
+        "codeFold": True,
+    }
+
+
+def test_hide_code_keeps_an_explicit_fold_style():
+    options = cell_options_patch(
+        {"code-fold": "show"},
+        {"language": "python", "hide_code": "true"},
+    )
+
+    assert options["render"] == {
+        "source": True,
+        "editor": False,
+        "codeFold": "show",
+    }
+
+
+def test_hide_code_with_code_fold_false_drops_the_source():
+    options = cell_options_patch(
+        {"code-fold": False},
+        {"language": "python", "hide_code": "true"},
+    )
+
+    assert options["render"] == {
+        "source": False,
+        "editor": False,
+        "codeFold": False,
+    }
+
+
+def test_hide_code_stays_hidden_where_nothing_can_reveal_it():
+    options = cell_options_patch(
+        {},
+        {"language": "python", "hide_code": "true"},
+        foldable=False,
+    )
+
+    assert options["render"] == {"source": False, "editor": False}

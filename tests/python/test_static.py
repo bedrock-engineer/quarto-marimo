@@ -140,3 +140,29 @@ def test_static_cell_formats_structured_execution_errors(
 
     assert result["type"] == "blockquote"
     assert result["value"] == expected
+
+
+def test_static_cell_carries_its_fold_and_summary():
+    request = MarimoCellRequest(index=0, source="value = 1", options={})
+    cell = CompiledMarimoCell(
+        index=0,
+        html="",
+        options={
+            "language": "python",
+            "render": {
+                "include": True,
+                "source": True,
+                "output": True,
+                "codeFold": "show",
+                "codeSummary": "Setup",
+            },
+            "execution": {"enabled": True},
+        },
+        output=None,
+    )
+
+    result = render_static_cell(request, cell)
+
+    assert result["displayCode"] is True
+    assert result["fold"] == "show"
+    assert result["summary"] == "Setup"

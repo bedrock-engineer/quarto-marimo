@@ -128,9 +128,19 @@ applies to every page of the project:
 - `eval: false` to disable cell execution for the document.
 - `header: |` to add a Python setup cell before authored cells.
 
-Cell `#|` options include `eval`, `echo`, `output`, `server-output`, `error`,
-`include`, `editor`, `hide-code`, `hide-output`, `disabled`, `unparsable`,
-`name`, and `column`. SQL cells also accept `query` and `engine`.
+Cell `#|` options include `eval`, `echo`, `code-fold`, `code-summary`,
+`output`, `server-output`, `error`, `include`, `editor`, `hide-code`,
+`hide-output`, `disabled`, `unparsable`, `name`, and `column`. SQL cells also
+accept `query` and `engine`.
+
+Echoed source is projected as a Quarto code block carrying `.cell-code`, so
+Quarto owns highlighting, the copy button, and folding. `code-fold` implies
+`echo: true`.
+
+`hide-code` folds the source instead of removing it, matching marimo's
+collapsed-but-revealable `hide_code`. Collection passes `foldable=False` for
+static formats, where nothing can reveal a folded block, so those keep the
+stricter reading.
 
 ## Generated artifacts
 
