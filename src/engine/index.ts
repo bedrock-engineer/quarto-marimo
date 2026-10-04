@@ -10,6 +10,7 @@ import type {
   ExecutionEngineDiscovery,
   ExecutionEngineInstance,
   ExecutionTarget,
+  Format,
   MappedString,
   PandocIncludes,
   PostProcessOptions,
@@ -151,9 +152,7 @@ const marimoEngineDiscovery: ExecutionEngineDiscovery = {
             source: options.target.markdown.value,
             input: options.target.input,
             interactive,
-            globalEval: options.target.metadata.eval !== false,
-            externalEnv: options.target.metadata["external-env"] === true,
-            pyproject: String(options.target.metadata.pyproject ?? ""),
+            ...engineSettings(options.format),
           }),
       );
       const chunks = await quarto.markdownRegex.breakQuartoMd(
@@ -200,6 +199,21 @@ const marimoEngineDiscovery: ExecutionEngineDiscovery = {
       Promise.resolve(),
   }),
 };
+
+/**
+ * The engine's own settings. Quarto merges `_quarto.yml` and the document
+ * header into `format.metadata`, and resolves `eval` into `format.execute`, so
+ * reading them here lets a project set them once for every page.
+ */
+export function engineSettings(
+  format: Format,
+): { globalEval: boolean; externalEnv: boolean; pyproject: string } {
+  return {
+    globalEval: format.execute.eval !== false,
+    externalEnv: format.metadata["external-env"] === true,
+    pyproject: String(format.metadata.pyproject ?? ""),
+  };
+}
 
 async function htmlToMarkdown(html: string): Promise<string> {
   const result = await quarto.system.pandoc(

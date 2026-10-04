@@ -120,7 +120,8 @@ Quarto engine types, Pandoc output, or Quarto theme classes.
 The engine claims Python, SQL, and Markdown fences with the `.marimo` class,
 including both `` ```python {.marimo} `` and `` ```{python .marimo} `` forms.
 
-Document front matter supports:
+Document front matter supports the keys below; set in `_quarto.yml`, each
+applies to every page of the project:
 
 - `external-env: true` to run compilation in the active Python environment.
 - `pyproject: |` to declare dependencies for the `uv` sandbox.
