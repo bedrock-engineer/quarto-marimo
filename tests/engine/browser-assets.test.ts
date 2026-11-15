@@ -32,6 +32,13 @@ Deno.test("the header stylesheet is one the islands runtime copies into widgets"
   assertEquals(style.textContent, ".marimo .grid{all:revert-layer}");
 });
 
+Deno.test("the header stylesheet shares the title of marimo's islands stylesheet", () => {
+  // A page applies only one titled stylesheet set, so a different title would
+  // switch marimo's own stylesheet off.
+  const style = header().querySelector("style[data-marimo-islands]");
+  assertEquals(style?.getAttribute("title"), "marimo-islands");
+});
+
 Deno.test("the iframe resize helper is a classic script ahead of the adapter", () => {
   const scripts = Array.from(
     header().querySelectorAll("script[data-marimo-islands]"),
