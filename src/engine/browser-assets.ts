@@ -4,9 +4,12 @@ const EXTENSION_CONFIG = "_extension.yml";
 
 // The islands runtime copies an inline stylesheet into each widget's shadow
 // root only when its title starts with "marimo", so the Quarto host rules in the
-// bridge stylesheet reach the widgets. A titled stylesheet joins a preferred
-// stylesheet set, which is harmless while it is the only titled one on the page.
-const STYLESHEET_TITLE = "marimo-quarto-islands";
+// bridge stylesheet reach the widgets. The title must also be the one marimo
+// gives its own islands stylesheet link (`marimo/_islands/_island_generator.py`).
+// Titled stylesheets form sets, and a page applies only the first title's set,
+// so any other title would switch marimo's stylesheet off outside the shadow
+// roots, leaving the outputs the runtime renders after Python starts unstyled.
+const STYLESHEET_TITLE = "marimo-islands";
 
 // `mo.iframe` output loads with `onload="__resizeIframe(this)"`. marimo's app
 // page defines that helper, but the islands runtime does not, so every iframe
