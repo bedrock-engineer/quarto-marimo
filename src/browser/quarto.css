@@ -1,0 +1,25 @@
+/* Quarto host rules for marimo islands. `scripts/build_browser.py` appends this
+   file to the bridge stylesheet. The engine inlines the result with a title that
+   starts with "marimo", which is how the islands runtime picks an inline
+   stylesheet to copy into every widget's shadow root. */
+
+/* The islands runtime copies the page's stylesheets into each widget's shadow
+   root (mo.ui.radio, mo.ui.slider, mo.ui.table, ...). Quarto's Bootstrap is
+   unlayered, while marimo's Tailwind utilities sit in cascade layers, and
+   unlayered rules always win. So `.grid` becomes Bootstrap's 12-column grid,
+   which lays a radio group out in a row, and buttons and checkboxes take
+   Bootstrap's look. `revert-layer` drops the unlayered declarations on these
+   elements, so marimo's layered ones apply again. */
+.marimo :is(button, input, select, textarea, label, .grid) {
+  all: revert-layer;
+}
+
+/* The bridge sets `overflow-x: auto` on island containers, which makes
+   `overflow-y` compute to `auto` as well. Outputs that overhang their line box by
+   a few pixels, such as KaTeX display math, then get a tiny vertical scrollbar
+   wherever scrollbars take up space (classic scrollbars, as on Windows). The
+   bridge rules have zero specificity, so these restore visible overflow. */
+.marimo-island-host,
+.marimo-island-host :is(marimo-island, marimo-cell-output) {
+  overflow: visible;
+}

@@ -11,6 +11,7 @@ from deno import find_deno_bin
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 BROWSER_ENTRY = REPO_ROOT / "src/browser/index.ts"
+HOST_CSS_SOURCE = REPO_ROOT / "src/browser/quarto.css"
 EXTENSION_DIR = REPO_ROOT / "_extensions/marimo"
 DIST_DIR = REPO_ROOT / "dist"
 ASSETS_DIR = EXTENSION_DIR / "assets"
@@ -79,6 +80,11 @@ def main() -> int:
     if styles.returncode != 0:
         sys.stderr.write(styles.stderr)
         return styles.returncode
+    # The Quarto host rules follow the bridge rules so they win ties.
+    host_styles = bundle(HOST_CSS_SOURCE, "--minify")
+    if host_styles.returncode != 0:
+        sys.stderr.write(host_styles.stderr)
+        return host_styles.returncode
 
     DIST_DIR.mkdir(exist_ok=True)
     ASSETS_DIR.mkdir(exist_ok=True)
@@ -88,7 +94,9 @@ def main() -> int:
         f"{BANNER}{normalize_bundle(javascript.stdout)}",
         encoding="utf-8",
     )
-    styles_output.write_text(styles.stdout, encoding="utf-8")
+    styles_output.write_text(
+        f"{styles.stdout.rstrip()}\n{host_styles.stdout}", encoding="utf-8"
+    )
     shutil.copyfile(browser_output, ASSETS_DIR / browser_output.name)
     shutil.copyfile(styles_output, ASSETS_DIR / styles_output.name)
     return 0
